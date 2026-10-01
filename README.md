@@ -28,7 +28,7 @@ La app de Slack (**PR Bot**) ya está creada y su token está en el secret de or
 
 1. En el canal de Slack del proyecto, escribe `/invite @PR Bot`.
 2. Saca el ID del canal: clic en el nombre del canal → al final del panel aparece `C…`.
-3. Saca el ID del grupo de revisores: abre Slack en el navegador → **Personas → Grupos de usuarios** → entra en el grupo; el ID `S…` aparece al final de la URL. Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
+3. Saca el ID del grupo de revisores: en el menú lateral → **Directories → Grupos de usuarios (User groups)** → entra en el grupo -> click en el botón con 3 puntos > copiar id del grupo (Copy group ID). Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
 4. En el repo (Settings → Secrets and variables → Actions) crea dos secrets: `SLACK_CHANNEL_ID` con el ID del canal y `SLACK_REVIEWERS` con los IDs del paso 3. Si el repo ya tiene `CHANNEL_ID` o `TEAM_NAME`, no hace falta crearlos: el workflow los usa cuando faltan los otros.
 
    En vez del ID de un grupo puedes poner su nombre (`equipo-dogppl` o `@equipo-dogppl`) y la action busca el ID (PR Bot ya tiene el permiso `usergroups:read` que hace falta). Si el grupo no existe, el aviso se publica igual, sin esa mención, y el log del job muestra un warning.
