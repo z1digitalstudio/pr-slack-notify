@@ -103,16 +103,24 @@ function buildMessage(state, pr, reviewers, repo) {
   const title = `#${pr.number} ${pr.title}`;
   const mentions = formatReviewers(reviewers);
 
+  // El contenido va en Block Kit dentro del attachment: el attachment da la línea de
+  // color y los bloques hacen que las menciones de grupo se vean bien también en móvil.
+  const body = `*<${pr.html_url}|${escapeSlack(title)}>*${mentions ? `\n${mentions}` : ''}`;
+  const footer = `<${repo.html_url}|${escapeSlack(repo.full_name)}>${label ? ` · ${label}` : ''}`;
   const attachment = {
     color,
     fallback: title,
-    title: escapeSlack(title),
-    title_link: pr.html_url,
-    mrkdwn_in: ['text'],
+    blocks: [
+      { type: 'section', text: { type: 'mrkdwn', text: body } },
+      {
+        type: 'context',
+        elements: [
+          { type: 'image', image_url: GITHUB_ICON, alt_text: 'GitHub' },
+          { type: 'mrkdwn', text: footer },
+        ],
+      },
+    ],
   };
-  if (mentions) attachment.text = mentions;
-  attachment.footer = `<${repo.html_url}|${escapeSlack(repo.full_name)}>${label ? ` · ${label}` : ''}`;
-  attachment.footer_icon = GITHUB_ICON;
 
   return { text: `Pull request opened by ${author}`, attachments: [attachment] };
 }

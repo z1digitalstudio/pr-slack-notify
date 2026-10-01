@@ -68,28 +68,42 @@ test('mensaje abierto: cabecera, título enlazado, revisores y línea azul', () 
     {
       color: '#2f81f7',
       fallback: '#42 Add <login> & stuff',
-      title: '#42 Add &lt;login&gt; &amp; stuff',
-      title_link: 'https://github.com/acme/web/pull/42',
-      mrkdwn_in: ['text'],
-      text: '<!subteam^S333>',
-      footer: '<https://github.com/acme/web|acme/web>',
-      footer_icon: 'https://github.githubassets.com/favicons/favicon.png',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '*<https://github.com/acme/web/pull/42|#42 Add &lt;login&gt; &amp; stuff>*\n<!subteam^S333>',
+          },
+        },
+        {
+          type: 'context',
+          elements: [
+            { type: 'image', image_url: 'https://github.githubassets.com/favicons/favicon.png', alt_text: 'GitHub' },
+            { type: 'mrkdwn', text: '<https://github.com/acme/web|acme/web>' },
+          ],
+        },
+      ],
     },
   ]);
 });
 
 test('cada estado cambia el color de la línea y añade una nota', () => {
   const att = (state) => buildMessage(state, pr(), 'U111', repo).attachments[0];
+  const footer = (state) => att(state).blocks[1].elements[1].text;
   assert.equal(att('approved').color, '#2da44e');
-  assert.equal(att('approved').footer, '<https://github.com/acme/web|acme/web> · Approved');
+  assert.equal(footer('approved'), '<https://github.com/acme/web|acme/web> · Approved');
   assert.equal(att('merged').color, '#8250df');
-  assert.equal(att('merged').footer, '<https://github.com/acme/web|acme/web> · Merged');
+  assert.equal(footer('merged'), '<https://github.com/acme/web|acme/web> · Merged');
   assert.equal(att('closed').color, '#cf222e');
-  assert.equal(att('closed').footer, '<https://github.com/acme/web|acme/web> · Closed without merging');
+  assert.equal(footer('closed'), '<https://github.com/acme/web|acme/web> · Closed without merging');
 });
 
 test('sin revisores no hay menciones', () => {
-  assert.equal(buildMessage('open', pr(), '', repo).attachments[0].text, undefined);
+  assert.equal(
+    buildMessage('open', pr(), '', repo).attachments[0].blocks[0].text.text,
+    '*<https://github.com/acme/web/pull/42|#42 Add &lt;login&gt; &amp; stuff>*',
+  );
 });
 
 
