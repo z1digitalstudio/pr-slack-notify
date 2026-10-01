@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { resolveState, buildMessage, formatReviewers } = require('./index');
+const { resolveState, buildMessage, eventTime, shouldUpdate, formatReviewers } = require('./index');
 
 const pr = (extra = {}) => ({
   number: 42,
@@ -92,3 +92,27 @@ test('sin revisores no hay menciones', () => {
   assert.equal(buildMessage('open', pr(), '', repo).attachments[0].text, undefined);
 });
 
+
+test('la hora del evento depende del estado', () => {
+  const t = Date.parse;
+  assert.equal(eventTime('open', { pull_request: pr({ updated_at: '2026-10-01T07:00:00Z' }) }), t('2026-10-01T07:00:00Z'));
+  assert.equal(
+    eventTime('approved', { pull_request: pr(), review: { submitted_at: '2026-10-01T08:00:00Z' } }),
+    t('2026-10-01T08:00:00Z'),
+  );
+  assert.equal(eventTime('merged', { pull_request: pr({ merged_at: '2026-10-01T09:00:00Z' }) }), t('2026-10-01T09:00:00Z'));
+  assert.equal(eventTime('closed', { pull_request: pr({ closed_at: '2026-10-01T10:00:00Z' }) }), t('2026-10-01T10:00:00Z'));
+});
+
+test('un re-run de un evento antiguo no cambia el mensaje', () => {
+  const merged = { state: 'merged', at: 3000 };
+  assert.equal(shouldUpdate(merged, 'open', 1000), false); // re-run de "opened"
+  assert.equal(shouldUpdate(merged, 'approved', 2000), false); // re-run de la aprobación
+  assert.equal(shouldUpdate(merged, 'merged', 3000), false); // re-run del merge
+});
+
+test('los eventos nuevos sí cambian el mensaje', () => {
+  assert.equal(shouldUpdate({ state: 'open', at: 1000 }, 'approved', 2000), true);
+  assert.equal(shouldUpdate({ state: 'closed', at: 2000 }, 'open', 3000), true); // reabierta
+  assert.equal(shouldUpdate({ repo: 'acme/web', pr: 42 }, 'approved', 2000), true); // mensaje de versión anterior
+});

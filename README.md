@@ -69,6 +69,7 @@ Después, quita la suscripción de la app oficial de GitHub en ese canal (`/gith
 - Al publicar, el mensaje lleva [metadatos de Slack](https://api.slack.com/metadata) con el repo y el número de PR. En los eventos siguientes, la action busca ese mensaje en el historial del canal (solo desde la fecha de creación de la PR) y lo edita con `chat.update`.
 - Si una PR se abrió antes de instalar la action, no hay mensaje que editar y la action no publica nada.
 - Una aprobación sobre una PR ya cerrada no cambia nada, para no tapar el morado.
+- **Re-runs:** relanzar el workflow nunca duplica el mensaje ni lo devuelve a un estado anterior. El mensaje guarda cuándo ocurrió el evento que lo dejó como está, y los eventos más antiguos se ignoran.
 - **Forks:** los workflows con `pull_request` de forks no tienen acceso a secrets. Si recibís PRs de forks, cambia `pull_request` por `pull_request_target` (la action no hace checkout del código, así que es seguro).
 
 ## Publicar una versión

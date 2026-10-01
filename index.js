@@ -86,6 +86,28 @@ function buildMessage(state, pr, reviewers, repo) {
   return { text: `Pull request opened by ${author}`, attachments: [attachment] };
 }
 
+// Momento en que ocurrió el evento. Al relanzar un workflow, GitHub repite el payload
+// original, así que este valor sirve para detectar eventos viejos.
+function eventTime(state, payload) {
+  const pr = payload.pull_request;
+  const iso = {
+    open: pr.updated_at,
+    approved: payload.review?.submitted_at,
+    merged: pr.merged_at,
+    closed: pr.closed_at,
+  }[state];
+  return Date.parse(iso || pr.updated_at);
+}
+
+// Un evento solo cambia el mensaje si es posterior al que lo dejó como está.
+// Mensajes sin "at" (publicados por versiones anteriores) siempre se actualizan.
+function shouldUpdate(current, state, at) {
+  const prevAt = Number(current?.at) || 0;
+  if (at < prevAt) return false;
+  if (at === prevAt && current?.state === state) return false;
+  return true;
+}
+
 async function slack(token, method, body, { get = false } = {}) {
   const url = new URL(`https://slack.com/api/${method}`);
   const init = { headers: { Authorization: `Bearer ${token}` } };
@@ -121,7 +143,7 @@ async function findMessage(token, channel, repo, pr) {
         m.metadata.event_payload?.repo === repo &&
         Number(m.metadata.event_payload?.pr) === pr.number,
     );
-    if (match) return match.ts;
+    if (match) return match;
     cursor = page.response_metadata?.next_cursor;
   } while (cursor);
   return null;
@@ -144,17 +166,21 @@ async function run() {
 
   const pr = payload.pull_request;
   const repo = payload.repository.full_name;
+  const at = eventTime(state, payload);
   const message = {
     channel,
     ...buildMessage(state, pr, reviewers, payload.repository),
     unfurl_links: false,
     unfurl_media: false,
-    metadata: { event_type: METADATA_TYPE, event_payload: { repo, pr: pr.number } },
+    metadata: { event_type: METADATA_TYPE, event_payload: { repo, pr: pr.number, state, at } },
   };
 
-  const ts = await findMessage(token, channel, repo, pr);
-  if (ts) {
-    await slack(token, 'chat.update', { ...message, ts });
+  const existing = await findMessage(token, channel, repo, pr);
+  if (existing && !shouldUpdate(existing.metadata.event_payload, state, at)) {
+    // Normalmente un re-run de un workflow antiguo: no tocamos el mensaje.
+    console.log(`El mensaje de ${repo}#${pr.number} ya refleja un estado igual o más reciente; no se cambia.`);
+  } else if (existing) {
+    await slack(token, 'chat.update', { ...message, ts: existing.ts });
     console.log(`Mensaje de ${repo}#${pr.number} actualizado a "${state}".`);
   } else if (state === 'open') {
     await slack(token, 'chat.postMessage', message);
@@ -165,7 +191,7 @@ async function run() {
   }
 }
 
-module.exports = { resolveState, buildMessage, formatReviewers, escapeSlack, STATES };
+module.exports = { resolveState, buildMessage, eventTime, shouldUpdate, formatReviewers, escapeSlack, STATES };
 
 if (require.main === module) {
   run().catch((err) => {
