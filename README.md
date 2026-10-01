@@ -24,6 +24,10 @@ Los revisores solo reciben la notificación una vez, al abrirse la PR, porque al
 
 La app de Slack (**PR Bot**) ya está creada y su token está en el secret de organización `SLACK_BOT_TOKEN`, disponible para todos los repos. No hace falta ningún token de GitHub.
 
+> **Repos en la organización de un cliente:** el secret de organización `SLACK_BOT_TOKEN` solo existe en `z1digitalstudio`. Si el repo pertenece a la organización del cliente, crea también `SLACK_BOT_TOKEN` como secret **del repo** (Settings → Secrets and variables → Actions), con el mismo token `xoxb-…` de PR Bot. El workflow no cambia.
+>
+> Además, como esta action es privada, solo pueden usarla los repos de `z1digitalstudio`. Un repo de otra organización no tiene acceso a ella.
+
 1. En el canal de Slack del proyecto, escribe `/invite @PR Bot`.
 2. Saca el ID del canal: clic en el nombre del canal → al final del panel aparece `C…`.
 3. Saca el ID del grupo de revisores: abre Slack en el navegador → **Personas → Grupos de usuarios** → entra en el grupo; el ID `S…` aparece al final de la URL. Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
