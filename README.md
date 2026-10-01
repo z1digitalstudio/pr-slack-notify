@@ -31,7 +31,7 @@ La app de Slack (**PR Bot**) ya está creada y su token está en el secret de or
 3. Saca el ID del grupo de revisores: abre Slack en el navegador → **Personas → Grupos de usuarios** → entra en el grupo; el ID `S…` aparece al final de la URL. Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
 4. En el repo (Settings → Secrets and variables → Actions) crea dos secrets: `SLACK_CHANNEL_ID` con el ID del canal y `SLACK_REVIEWERS` con los IDs del paso 3. Si el repo ya tiene `CHANNEL_ID` o `TEAM_NAME`, no hace falta crearlos: el workflow los usa cuando faltan los otros.
 
-   En vez del ID de un grupo puedes poner su nombre (`equipo-dogppl` o `@equipo-dogppl`) y la action busca el ID. Para eso PR Bot necesita el permiso `usergroups:read`. Si falta o el grupo no existe, el aviso se publica igual, sin esa mención, y el log del job muestra un warning.
+   En vez del ID de un grupo puedes poner su nombre (`equipo-dogppl` o `@equipo-dogppl`) y la action busca el ID (PR Bot ya tiene el permiso `usergroups:read` que hace falta). Si el grupo no existe, el aviso se publica igual, sin esa mención, y el log del job muestra un warning.
 5. Crea `.github/workflows/pr-slack-notify.yml`:
 
 ```yaml
@@ -67,6 +67,16 @@ jobs:
 | `ignore_drafts` | no | `true` por defecto: los drafts se anuncian cuando pasan a *Ready for review* |
 
 Después, quita la suscripción de la app oficial de GitHub en ese canal (`/github unsubscribe owner/repo`) para quitar el ruido.
+
+## Si ya usabas PR Bot
+
+- **Token y secrets:** no hay que tocar nada. Al añadir el permiso `usergroups:read` el token no cambió, así que `SLACK_BOT_TOKEN` sigue valiendo, tanto el de la organización como los de los repos de clientes.
+- **Workflow:** los repos que ya tienen el workflow siguen funcionando igual con `@v1`. Solo si en ese repo los secrets se llaman `CHANNEL_ID` o `TEAM_NAME` hay que cambiar estas dos líneas para que los use cuando falten los otros:
+
+  ```yaml
+  channel_id: ${{ secrets.SLACK_CHANNEL_ID || secrets.CHANNEL_ID }}
+  reviewers: ${{ secrets.SLACK_REVIEWERS || secrets.TEAM_NAME }}
+  ```
 
 ## Cómo funciona
 
