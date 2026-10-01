@@ -29,7 +29,9 @@ La app de Slack (**PR Bot**) ya está creada y su token está en el secret de or
 1. En el canal de Slack del proyecto, escribe `/invite @PR Bot`.
 2. Saca el ID del canal: clic en el nombre del canal → al final del panel aparece `C…`.
 3. Saca el ID del grupo de revisores: abre Slack en el navegador → **Personas → Grupos de usuarios** → entra en el grupo; el ID `S…` aparece al final de la URL. Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
-4. En el repo (Settings → Secrets and variables → Actions) crea dos secrets: `SLACK_CHANNEL_ID` con el ID del canal y `SLACK_REVIEWERS` con los IDs del paso 3.
+4. En el repo (Settings → Secrets and variables → Actions) crea dos secrets: `SLACK_CHANNEL_ID` con el ID del canal y `SLACK_REVIEWERS` con los IDs del paso 3. Si el repo ya tiene `CHANNEL_ID` o `TEAM_NAME`, no hace falta crearlos: el workflow los usa cuando faltan los otros.
+
+   En vez del ID de un grupo puedes poner su nombre (`equipo-dogppl` o `@equipo-dogppl`) y la action busca el ID. Para eso PR Bot necesita el permiso `usergroups:read`. Si falta o el grupo no existe, el aviso se publica igual, sin esa mención, y el log del job muestra un warning.
 5. Crea `.github/workflows/pr-slack-notify.yml`:
 
 ```yaml
@@ -51,8 +53,8 @@ jobs:
       - uses: z1digitalstudio/pr-slack-notify@v1
         with:
           slack_bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-          reviewers: ${{ secrets.SLACK_REVIEWERS }}
+          channel_id: ${{ secrets.SLACK_CHANNEL_ID || secrets.CHANNEL_ID }}
+          reviewers: ${{ secrets.SLACK_REVIEWERS || secrets.TEAM_NAME }}
 ```
 
 ### Inputs
@@ -61,7 +63,7 @@ jobs:
 |---|---|---|
 | `slack_bot_token` | sí | Token `xoxb-…` del bot |
 | `channel_id` | sí | ID del canal (`C…`) |
-| `reviewers` | no | IDs `U…` / `S…` separados por comas |
+| `reviewers` | no | IDs `U…` / `S…` o nombres de grupo, separados por comas |
 | `ignore_drafts` | no | `true` por defecto: los drafts se anuncian cuando pasan a *Ready for review* |
 
 Después, quita la suscripción de la app oficial de GitHub en ese canal (`/github unsubscribe owner/repo`) para quitar el ruido.

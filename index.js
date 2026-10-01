@@ -56,6 +56,37 @@ function formatReviewers(raw) {
     .join(' ');
 }
 
+const SLACK_ID = /^[UWS][A-Z0-9]{6,}$/;
+
+// Convierte nombres de grupo (`equipo-dogppl`, `@equipo-dogppl` o el nombre visible)
+// en su ID `S…`. Los IDs se dejan tal cual. Solo llama a Slack si hay algún nombre,
+// y para eso el bot necesita el permiso usergroups:read.
+async function resolveReviewers(raw, listGroups) {
+  const entries = raw.split(/[\s,]+/).filter(Boolean);
+  if (entries.every((e) => SLACK_ID.test(e))) return entries.join(',');
+
+  let groups;
+  try {
+    groups = await listGroups();
+  } catch (err) {
+    console.log(`::warning::No se pudieron buscar los grupos de Slack (${err.message}). ¿Tiene PR Bot el permiso usergroups:read?`);
+    return entries.filter((e) => SLACK_ID.test(e)).join(',');
+  }
+
+  const ids = [];
+  for (const entry of entries) {
+    if (SLACK_ID.test(entry)) {
+      ids.push(entry);
+      continue;
+    }
+    const wanted = entry.replace(/^@/, '').toLowerCase();
+    const group = groups.find((g) => g.handle?.toLowerCase() === wanted || g.name?.toLowerCase() === wanted);
+    if (group) ids.push(group.id);
+    else console.log(`::warning::No existe ningún grupo de Slack llamado "${entry}"; no se menciona.`);
+  }
+  return ids.join(',');
+}
+
 function escapeSlack(text) {
   return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -152,7 +183,7 @@ async function findMessage(token, channel, repo, pr) {
 async function run() {
   const token = getInput('slack_bot_token');
   const channel = getInput('channel_id');
-  const reviewers = getInput('reviewers');
+  const rawReviewers = getInput('reviewers');
   const ignoreDrafts = getInput('ignore_drafts', 'true') !== 'false';
   if (!token || !channel) throw new Error('Faltan los inputs slack_bot_token y/o channel_id');
 
@@ -164,6 +195,10 @@ async function run() {
     return;
   }
 
+  const reviewers = await resolveReviewers(rawReviewers, async () => {
+    const data = await slack(token, 'usergroups.list', {}, { get: true });
+    return data.usergroups;
+  });
   const pr = payload.pull_request;
   const repo = payload.repository.full_name;
   const at = eventTime(state, payload);
@@ -191,7 +226,7 @@ async function run() {
   }
 }
 
-module.exports = { resolveState, buildMessage, eventTime, shouldUpdate, formatReviewers, escapeSlack, STATES };
+module.exports = { resolveState, buildMessage, eventTime, shouldUpdate, formatReviewers, resolveReviewers, escapeSlack, STATES };
 
 if (require.main === module) {
   run().catch((err) => {

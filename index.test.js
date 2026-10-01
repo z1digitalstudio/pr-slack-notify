@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { resolveState, buildMessage, eventTime, shouldUpdate, formatReviewers } = require('./index');
+const { resolveState, buildMessage, eventTime, shouldUpdate, formatReviewers, resolveReviewers } = require('./index');
 
 const pr = (extra = {}) => ({
   number: 42,
@@ -115,4 +115,27 @@ test('los eventos nuevos sí cambian el mensaje', () => {
   assert.equal(shouldUpdate({ state: 'open', at: 1000 }, 'approved', 2000), true);
   assert.equal(shouldUpdate({ state: 'closed', at: 2000 }, 'open', 3000), true); // reabierta
   assert.equal(shouldUpdate({ repo: 'acme/web', pr: 42 }, 'approved', 2000), true); // mensaje de versión anterior
+});
+
+const groups = [
+  { id: 'S0DOGPPL1', handle: 'equipo-dogppl', name: 'Equipo Dogppl' },
+  { id: 'S0MAPSI01', handle: 'mapsi-devs', name: 'Mapsi' },
+];
+
+test('los IDs se usan tal cual, sin llamar a Slack', async () => {
+  const list = () => assert.fail('no debería buscar grupos');
+  assert.equal(await resolveReviewers('S0DOGPPL1, U0AAAAAAA', list), 'S0DOGPPL1,U0AAAAAAA');
+});
+
+test('los nombres de grupo se convierten en su ID', async () => {
+  const list = async () => groups;
+  assert.equal(await resolveReviewers('equipo-dogppl', list), 'S0DOGPPL1');
+  assert.equal(await resolveReviewers('@Equipo-Dogppl', list), 'S0DOGPPL1');
+  assert.equal(await resolveReviewers('Mapsi, U0AAAAAAA', list), 'S0MAPSI01,U0AAAAAAA');
+});
+
+test('un nombre que no existe o un fallo de Slack no rompen el aviso', async () => {
+  assert.equal(await resolveReviewers('no-existe, U0AAAAAAA', async () => groups), 'U0AAAAAAA');
+  const failing = async () => { throw new Error('missing_scope'); };
+  assert.equal(await resolveReviewers('equipo-dogppl, U0AAAAAAA', failing), 'U0AAAAAAA');
 });
