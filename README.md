@@ -20,20 +20,15 @@ La línea lateral cambia de color según el estado:
 
 Los revisores solo reciben la notificación una vez, al abrirse la PR, porque al editar un mensaje Slack no vuelve a notificar las menciones. Commits, comentarios y "changes requested" no generan nada en Slack.
 
-## 1. Crear la app de Slack (una vez)
+## Usarla en un repo
 
-1. Entra en https://api.slack.com/apps → **Create New App** → *From scratch*.
-2. En **OAuth & Permissions → Bot Token Scopes**, añade:
-   - `chat:write`
-   - `channels:history` (o `groups:history` si el canal es privado)
-3. Pulsa **Install to Workspace** y copia el **Bot User OAuth Token** (`xoxb-…`).
-4. En el canal, escribe `/invite @nombre-de-tu-app`.
-5. Para el ID del canal: clic en el nombre del canal → al final del panel aparece `C…`.
-6. Para el ID de un grupo de usuarios (lo normal: un grupo por proyecto), abre Slack en el navegador → **Personas → Grupos de usuarios** → entra en el grupo; el ID `S…` aparece al final de la URL. Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
+La app de Slack (**PR Bot**) ya está creada y su token está en el secret de organización `SLACK_BOT_TOKEN`, disponible para todos los repos. No hace falta ningún token de GitHub.
 
-## 2. Usarla en un repo
-
-Guarda el token `xoxb-…` como secret de organización `SLACK_BOT_TOKEN` (Organization settings → Secrets and variables → Actions), disponible para todos los repos. No hace falta ningún token de GitHub. En cada repo (Settings → Secrets and variables → Actions) crea dos secrets: `SLACK_CHANNEL_ID` con el ID del canal y `SLACK_REVIEWERS` con los IDs a mencionar, normalmente el grupo del proyecto (`S…`). Después crea `.github/workflows/pr-slack-notify.yml`:
+1. En el canal de Slack del proyecto, escribe `/invite @PR Bot`.
+2. Saca el ID del canal: clic en el nombre del canal → al final del panel aparece `C…`.
+3. Saca el ID del grupo de revisores: abre Slack en el navegador → **Personas → Grupos de usuarios** → entra en el grupo; el ID `S…` aparece al final de la URL. Para una persona: su perfil → ⋮ → **Copy member ID** (`U…`). Se pueden combinar varios separados por comas: `S0123ABCD, U0AAAAAAA`.
+4. En el repo (Settings → Secrets and variables → Actions) crea dos secrets: `SLACK_CHANNEL_ID` con el ID del canal y `SLACK_REVIEWERS` con los IDs del paso 3.
+5. Crea `.github/workflows/pr-slack-notify.yml`:
 
 ```yaml
 name: PR Slack Notify
