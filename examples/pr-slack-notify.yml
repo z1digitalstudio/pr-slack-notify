@@ -1,0 +1,22 @@
+# Copia este archivo en .github/workflows/ de cada repo donde quieras los avisos.
+name: PR Slack Notify
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # Evita carreras si se aprueba y mergea casi a la vez
+    concurrency:
+      group: pr-slack-notify-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: z1digitalstudio/pr-slack-notify@v1
+        with:
+          slack_bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
+          reviewers: ${{ secrets.SLACK_REVIEWERS }}

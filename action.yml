@@ -1,0 +1,24 @@
+name: PR Slack Notify
+description: Un único mensaje por PR en Slack cuya línea lateral cambia de color (azul abierta → verde aprobada → morada mergeada) en vez de llenar el canal de ruido.
+author: Z1
+branding:
+  icon: message-circle
+  color: purple
+inputs:
+  slack_bot_token:
+    description: Token del bot de Slack (xoxb-…) con los scopes chat:write y channels:history (o groups:history si el canal es privado).
+    required: true
+  channel_id:
+    description: ID del canal de Slack (C…), no el nombre.
+    required: true
+  reviewers:
+    description: IDs de Slack de los revisores a mencionar, separados por comas. Usuarios (U…) o grupos de usuarios (S…).
+    required: false
+    default: ''
+  ignore_drafts:
+    description: Si es "true", las PRs en draft no se anuncian hasta que pasan a "Ready for review".
+    required: false
+    default: 'true'
+runs:
+  using: node24
+  main: index.js

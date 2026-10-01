@@ -1,0 +1,11 @@
+{
+  "name": "pr-slack-notify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Action: un mensaje de Slack por PR que cambia de color según su estado",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
